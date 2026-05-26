@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db-shopping:
+    image: postgres:15-alpine
+    container_name: db-shopping
+    environment:
+      POSTGRES_DB: shopping_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app-shopping:
+    build: .
+    container_name: app-shopping
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db-shopping
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-shopping:5432/shopping_db
+
+volumes:
+  pgdata:

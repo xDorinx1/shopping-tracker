@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Shopping Tracker Local</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { display: block; width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
+        button { background-color: #0056b3; color: white; border: none; cursor: pointer; font-weight: bold; }
+        ul { list-style-type: none; padding: 0; }
+        li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Listă de Cumpărături (Local)</h2>
+    <input type="text" id="obiect" placeholder="Produs (ex: Pâine)">
+    <input type="number" id="cost" placeholder="Cost (MDL)">
+    <input type="text" id="categorie" placeholder="Categorie">
+    <button onclick="addItem()">Adaugă</button>
+
+    <h3>Produse:</h3>
+    <ul id="lista"></ul>
+</div>
+
+<script>
+    async function loadItems() {
+        const res = await fetch('/api/cumparaturi');
+        const items = await res.json();
+        const lista = document.getElementById('lista');
+        lista.innerHTML = '';
+        items.forEach(item => {
+            lista.innerHTML += `<li><span><strong>${item.obiect}</strong> (${item.categorie})</span> <span>${item.cost} MDL</span></li>`;
+        });
+    }
+
+    async function addItem() {
+        const obiect = document.getElementById('obiect').value;
+        const cost = document.getElementById('cost').value;
+        const categorie = document.getElementById('categorie').value;
+
+        if(!obiect || !cost || !categorie) return alert('Completați toate câmpurile!');
+
+        await fetch('/api/cumparaturi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ obiect, cost: parseFloat(cost), categorie })
+        });
+
+        document.getElementById('obiect').value = '';
+        document.getElementById('cost').value = '';
+        document.getElementById('categorie').value = '';
+        loadItems();
+    }
+    loadItems();
+</script>
+</body>
+</html>
