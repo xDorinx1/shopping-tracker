@@ -1,4 +1,4 @@
-name: Java Spring Boot CI/CD (Build & Push to GitHub Packages)
+name: Java Spring Boot CI/CD
 
 on:
   push:
@@ -15,18 +15,29 @@ jobs:
       packages: write
 
     steps:
+      # 1. Descarcă codul din repozitoriu
       - name: Extragere cod din GitHub
         uses: actions/checkout@v4
 
-      # --- PASUL NOU: Transformăm numele repozitoriului în litere mici ---
+      # 2. Configurați Java JDK 17
+      - name: Configurare JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Compilează proiectul local pe mașina GitHub (Generează fișierul .jar)
+      - name: Compilare proiect cu Maven
+        run: mvn clean package -DskipTests
+
+      # 4. Transformă numele repozitoriului în litere mici (ca să nu mai avem eroarea de tag)
       - name: Setează numele repozitoriului în litere mici
         id: string
         run: |
           echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      - name: Configurare Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+      # 5. Autentificare în GitHub Packages
       - name: Autentificare în GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -34,8 +45,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # În pasul de mai jos am înlocuit github.repository cu variabila modificată REPO_LOWER
-      - name: Construire și Push Imagine Docker (CI/CD)
+      # 6. Construiește imaginea Docker folosind .jar-ul gata compilat și o trimite în cloud
+      - name: Construire și Push Imagine Docker
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -44,5 +55,3 @@ jobs:
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}/shopping-tracker:latest
             ghcr.io/${{ env.REPO_LOWER }}/shopping-tracker:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
