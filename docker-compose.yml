@@ -1,27 +1,24 @@
 version: '3.8'
 
 services:
-  db-shopping:
+  db:
     image: postgres:15-alpine
-    container_name: db-shopping
+    container_name: shopping-db
     environment:
       POSTGRES_DB: shopping_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
       - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
 
-  app-shopping:
-    build: .
-    container_name: app-shopping
+  app:
+    image: ghcr.io/xdorinx1/shopping-tracker/shopping-tracker:latest
+    container_name: shopping-container
     ports:
       - "8080:8080"
     depends_on:
-      - db-shopping
+      - db
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db-shopping:5432/shopping_db
-
-volumes:
-  pgdata:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/shopping_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password

@@ -54,4 +54,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_LOWER }}/shopping-tracker:latest
-            ghcr.io/${{ env.REPO_LOWER }}/shopping-tracker:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWER }}/shopping-tracker:${{ github.sha }}  
