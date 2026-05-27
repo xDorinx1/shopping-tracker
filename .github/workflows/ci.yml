@@ -1,4 +1,4 @@
-name: Java Spring Boot CI (Local Verification)
+name: Java Spring Boot CI/CD (Build & Push to GitHub Packages)
 
 # Specifică evenimentele care declanșează rularea automată
 on:
@@ -8,25 +8,47 @@ on:
     branches: [ "main", "master" ]
 
 jobs:
-  build-and-test:
-    # Mașina virtuală gratuită oferită de GitHub
+  build-and-deploy:
+    # Mașina virtuală gratuită oferită de GitHub pe care va rula procesul
     runs-on: ubuntu-latest
+
+    # Permisiuni stricte și obligatorii pentru a putea încărca imagini în GitHub Packages
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       # 1. Extrage codul sursă din repozitoriul tău pe mașina de build
       - name: Extragere cod din GitHub
         uses: actions/checkout@v4
 
-      # 2. Configurează mediul de execuție Java (JDK 17)
-      - name: Configurare JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
+      # 2. Configurare Docker Buildx (permite caching avansat și build-uri rapide)
+      - name: Configurare Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      # 3. Compilează codul Java și verifică dacă totul este corect
-      # Notă: Dacă ai teste care necesită o bază de date reală activă și vrei să le eviți momentan,
-      # poți lăsa flag-ul -DskipTests. Dacă vrei să rulezi și testele, folosește doar: mvn clean package
-      - name: Compilare proiect cu Maven (Verify Build)
-        run: mvn clean package -DskipTests
+      # ==================== PROCESUL DE CD (CONTINUOUS DEPLOYMENT) ====================
+
+      # 3. Autentificarea securizată în GitHub Container Registry (GHCR)
+      # Folosește un jeton intern oferit automat de GitHub (GITHUB_TOKEN)
+      - name: Autentificare în GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 4. Construirea imaginii Docker (folosind Dockerfile-ul tău multi-stage)
+      # și trimiterea ei direct în GitHub Packages (GHCR)
+      - name: Construire și Push Imagine Docker (CI/CD)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          # Se salvează automat cu tag-ul :latest și cu un tag unic bazat pe commit (SHA)
+          tags: |
+            ghcr.io/${{ github.repository }}/shopping-tracker:latest
+            ghcr.io/${{ github.repository }}/shopping-tracker:${{ github.sha }}
+          # Caching pentru a face build-urile viitoare mult mai rapide
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
